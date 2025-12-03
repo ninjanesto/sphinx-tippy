@@ -82,7 +82,7 @@ def setup(app: Sphinx):
         [list, tuple],
     )
     app.add_config_value("tippy_add_class", "", "html")
-    app.add_config_value("tippy_skip_pages", (), "html",(list, tuple))
+    app.add_config_value("tippy_skip_pages", (), "html", (list, tuple))
 
     app.connect("builder-inited", compile_config)
     app.connect("doctree-resolved", collect_links_and_id_maps)
@@ -247,7 +247,9 @@ def merge_tippy_data(app: Sphinx, env, docnames: set[str], other: Any) -> None:
     env.tippy_data["pages"].update(other.tippy_data["pages"])
 
 
-def collect_links_and_id_maps(app: Sphinx, doctree: nodes.document, docname: str) -> None:
+def collect_links_and_id_maps(
+    app: Sphinx, doctree: nodes.document, docname: str
+) -> None:
     """Collect links and ID maps from the doctree during the environment reading phase."""
     if not doctree:
         # only process pages with a doctree,
@@ -270,8 +272,8 @@ def collect_links_and_id_maps(app: Sphinx, doctree: nodes.document, docname: str
     # Use standard doctree traversal to find all references (links)
     for node in doctree.traverse(nodes.reference):
         # External URI check
-        if 'refuri' in node:
-            href = node['refuri']
+        if "refuri" in node:
+            href = node["refuri"]
 
             if href in tippy_config.custom_tips:
                 custom_in_page.add(href)
@@ -306,13 +308,15 @@ def collect_links_and_id_maps(app: Sphinx, doctree: nodes.document, docname: str
                 target = target or None
 
             if path.endswith(".html"):
-                other_docname = posixpath.normpath(posixpath.join(posixpath.dirname(docname), path[:-5]))
+                other_docname = posixpath.normpath(
+                    posixpath.join(posixpath.dirname(docname), path[:-5])
+                )
                 if other_docname in app.env.all_docs:
                     refs_in_page.add((other_docname, target))
 
         # Internal Document ID check (local anchors)
-        elif 'refid' in node:
-            refs_in_page.add((None, node['refid']))
+        elif "refid" in node:
+            refs_in_page.add((None, node["refid"]))
 
     # create path based on pagename
     # we also add a unique ID to the path,
@@ -369,7 +373,7 @@ def create_element_id_map(doctree: nodes.document) -> dict[str, str]:
 
 
 def create_id_to_tip_html(
-        config: TippyConfig, body: BeautifulSoup | Tag
+    config: TippyConfig, body: BeautifulSoup | Tag
 ) -> dict[str | None, str]:
     """Create a mapping of ids to the HTML to show in the tooltip."""
     id_to_html: dict[str | None, str] = {}
@@ -388,6 +392,7 @@ def create_id_to_tip_html(
     def next_dd_after(node):
         """Return the next <dd> after `node`, skipping intervening <dt> tags."""
         from bs4 import Tag
+
         sib = node.next_sibling
         while sib:
             # Skip non-tags
@@ -503,11 +508,11 @@ def rewrite_local_attrs(content: str, rel_path: str) -> str:
 
 
 def generate_page_js(
-        app: Sphinx,
-        pagename: str,
-        templatename: str,
-        context: dict,
-        doctree: nodes.document,
+    app: Sphinx,
+    pagename: str,
+    templatename: str,
+    context: dict,
+    doctree: nodes.document,
 ) -> None:
     """Final step in page generation: parse HTML for tips and inject JS scripts."""
     if not doctree:
@@ -523,7 +528,9 @@ def generate_page_js(
     tippy_data = get_tippy_data(app)
 
     if pagename not in tippy_data["pages"]:
-        LOGGER.warning(f"Tippy data not found for page: {pagename}. Skipping JS generation.")
+        LOGGER.warning(
+            f"Tippy data not found for page: {pagename}. Skipping JS generation."
+        )
         return
 
     page_data = tippy_data["pages"][pagename]
@@ -532,7 +539,8 @@ def generate_page_js(
     for js_file in tippy_config.js_files:
         app.add_js_file(js_file, loading_method="defer")
     app.add_js_file(
-        str(page_data["js_path"].relative_to(Path(app.outdir, "_static"))), loading_method="defer"
+        str(page_data["js_path"].relative_to(Path(app.outdir, "_static"))),
+        loading_method="defer",
     )
 
     if tippy_config.enable_mathjax:
@@ -708,7 +716,11 @@ def write_tippy_js(app: Sphinx, exception: Any):
                 data["id_to_html"] = create_id_to_tip_html(tippy_config, body)
 
                 if not data["id_to_html"]:
-                    LOGGER.warning(f"Could not extract local HTML tips from rendered file for: {pagename}. JS file will be empty.", type="tippy", subtype="render")
+                    LOGGER.warning(
+                        f"Could not extract local HTML tips from rendered file for: {pagename}. JS file will be empty.",
+                        type="tippy",
+                        subtype="render",
+                    )
                     continue
 
         write_tippy_props_file(app, pagename, wiki_cache, doi_cache, rtd_cache)
@@ -755,11 +767,11 @@ def write_tippy_props_file(
                 selector_to_html[f'a[href="{relpage}.html"]'] = rewrite_local_attrs(
                     tippy_page_data[refpage]["id_to_html"][None], relfolder
                 )
-            elif (
-                target
-                and target in tippy_page_data[refpage]["element_id_map"]
-            ):
-                if tippy_page_data[refpage]["element_id_map"][target] not in tippy_page_data[refpage]["id_to_html"]:
+            elif target and target in tippy_page_data[refpage]["element_id_map"]:
+                if (
+                    tippy_page_data[refpage]["element_id_map"][target]
+                    not in tippy_page_data[refpage]["id_to_html"]
+                ):
 
                     html_path = Path(app.outdir) / f"{refpage}.html"
 
@@ -768,11 +780,16 @@ def write_tippy_props_file(
                             body_html = f.read()
 
                             body = BeautifulSoup(body_html, "lxml")
-                            tippy_page_data[refpage]["id_to_html"] = create_id_to_tip_html(tippy_config, body)
+                            tippy_page_data[refpage]["id_to_html"] = (
+                                create_id_to_tip_html(tippy_config, body)
+                            )
 
                         if not tippy_page_data[refpage]["id_to_html"]:
-                            LOGGER.warning(f"Could not extract local HTML tips from rendered file for: {refpage}.",
-                                           type="tippy", subtype="render")
+                            LOGGER.warning(
+                                f"Could not extract local HTML tips from rendered file for: {refpage}.",
+                                type="tippy",
+                                subtype="render",
+                            )
                             continue
 
                 html_str = tippy_page_data[refpage]["id_to_html"][
@@ -804,7 +821,7 @@ def write_tippy_props_file(
             "{MathJax.typesetPromise([instance.popper]).then(() => {});},"
         )
         if tippy_config.enable_mathjax
-           and app.builder.math_renderer_name == "mathjax"  # type: ignore[attr-defined]
+        and app.builder.math_renderer_name == "mathjax"  # type: ignore[attr-defined]
         else ""
     )
     # TODO need to only enable when math,
